@@ -33,6 +33,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
     path("accounts/", include("authentication.urls")),
+    path("stocks/", include("stocks.urls")),
+    path("alerts/", include("alerts.urls")),
     path(
         "",
         lambda request: HttpResponse(

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Alerts Overview{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Alerts Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for alert in alerts %}
+        <div class="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+            <a href="{% url 'alert_detail' alert.alert_name %}" class="block">
+                <div class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            {% if 'price' in alert.alert_name|lower %}
+                            <i class="fas fa-dollar-sign text-green-500 text-xl"></i>
+                            {% elif 'volume' in alert.alert_name|lower %}
+                            <i class="fas fa-chart-bar text-blue-500 text-xl"></i>
+                            {% elif 'trend' in alert.alert_name|lower %}
+                            <i class="fas fa-chart-line text-purple-500 text-xl"></i>
+                            {% elif 'earnings' in alert.alert_name|lower %}
+                            <i class="fas fa-file-invoice-dollar text-amber-500 text-xl"></i>
+                            {% else %}
+                            <i class="fas fa-bell text-indigo-500 text-xl"></i>
+                            {% endif %}
+                            <h3 class="ml-3 text-lg font-medium text-gray-900">{{ alert.alert_name }}</h3>
+                        </div>
+                        <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            {{ alert.stock_count }} stocks
+                        </span>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-900">
+                            View details <i class="fas fa-chevron-right ml-2"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-span-full">
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <i class="fas fa-bell-slash text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900">No alerts found</h3>
+                <p class="mt-1 text-gray-500">Create your first alert to start monitoring stocks.</p>
+                <button
+                    class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <i class="fas fa-plus mr-2"></i>Create Alert
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

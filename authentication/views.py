@@ -19,15 +19,13 @@ class CustomLoginView(LoginView):
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            return redirect(
-                "public_dashboard"
-            )  # Redirect to dashboard if already logged in
+            return redirect("home")
         return super().dispatch(request, *args, **kwargs)
 
 
 def signup(request):
     if request.user.is_authenticated:
-        return redirect("public_dashboard")
+        return redirect("home")
     if request.method == "POST":
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():

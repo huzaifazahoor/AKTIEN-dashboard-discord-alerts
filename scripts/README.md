@@ -46,7 +46,7 @@ To set up the project, follow these steps:
         
     -   Run Cloud SQL Proxy:
         
-        `.\cloud_sql_proxy.exe -instances=<cloud-sql-instance-connection-name>=tcp:127.0.0.1:5432` 
+        `.\cloud_sql_proxy.exe -instances=extreme-lore-442313-u1:us-central1:aktien-db=tcp:127.0.0.1:5432` 
         
         Ensure the instance connection name matches your Cloud SQL instance.
         
