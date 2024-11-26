@@ -15,11 +15,11 @@ class EarningsAlertSystem:
             "Large Cap": (10000, float("inf")),
         }
 
-    def download_finviz_data(self):
+    def download_finviz_data(self, day):
         url = "https://elite.finviz.com/export.ashx"
         params = {
             "v": "152",
-            "f": "fa_epsrev_eo10,ta_gap_u3",
+            "f": f"earningsdate_{day},fa_epsrev_eo5,sh_avgvol_o500,sh_relvol_o1.5,ta_gap_u3",
             "ft": "4",
             "c": "0,1,2,3,4,5,6,63,67,65,66",
             "auth": f"{self.FINVIZ_EMAIL}",
@@ -28,9 +28,9 @@ class EarningsAlertSystem:
         return fetch_csv_as_dataframe(url, params)
 
     def process_data(self, df):
-        df["Volume Ratio"] = df["Volume"] / df["Average Volume"]
+        # df["Volume Ratio"] = df["Volume"] / df["Average Volume"]
+        # df = df[df["Volume Ratio"] > 1.5]
         df["Change"] = df["Change"].str.rstrip("%").astype(float)
-        df = df[df["Volume Ratio"] > 1.5]
 
         categorized_stocks = {
             cap_type: [] for cap_type in self.MARKET_CAP_RANGES.keys()
@@ -98,9 +98,10 @@ class EarningsAlertSystem:
 
 def main(request):
     alert_system = EarningsAlertSystem()
-    df = alert_system.download_finviz_data()
-    categorized_stocks = alert_system.process_data(df)
-    alert_system.create_discord_alert(categorized_stocks)
+    for day in ["today", "yesterday"]:
+        df = alert_system.download_finviz_data(day)
+        categorized_stocks = alert_system.process_data(df)
+        alert_system.create_discord_alert(categorized_stocks)
     return "Alert sent successfully"
 
 
