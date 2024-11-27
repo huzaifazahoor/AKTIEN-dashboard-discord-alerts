@@ -38,7 +38,7 @@ deploy_function() {
         --region=us-central1 \
         --source="$function_dir" \
         --runtime python311 --trigger-http --allow-unauthenticated \
-        --set-env-vars DB_HOST="${DB_HOST}",DB_PWD="${DB_PWD}",DB_USER="${DB_USER}",DB_NAME="${DB_NAME}" \
+        --set-env-vars DB_HOST="${DB_HOST}",DB_PWD="${DB_PWD}",DB_USER="${DB_USER}",DB_NAME="${DB_NAME}",FINVIZ_EMAIL="${FINVIZ_EMAIL}" \
         --entry-point=main \
         --timeout="$timeout_value" \
         --memory=4GiB \
@@ -84,7 +84,6 @@ deploy_function() {
     rm -f $function_dir/requirements.txt
 }
 
-if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/<folder_name>/'; then
-    # Set this margin for 15 minutes
-    deploy_function "<function_name>_function" "scripts/<folder_name>" "no-gen2" "0 0 * * 7" '{"hello": "world"}'
+if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/1_earnings_discord_bot/'; then
+    deploy_function "earnings_discord_bot_function" "scripts/1_earnings_discord_bot" "no-gen2" "05 16 * * MON-FRI" '{"hello": "world"}'
 fi

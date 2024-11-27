@@ -52,7 +52,7 @@ class EarningsAlertSystem:
 
         return categorized_stocks
 
-    def create_discord_alert(self, categorized_stocks):
+    def create_discord_alert(self, categorized_stocks, day):
         headers = {"Content-Type": "application/json"}
 
         for cap_type, stocks in categorized_stocks.items():
@@ -60,7 +60,7 @@ class EarningsAlertSystem:
                 continue
 
             embed = {
-                "title": f"🎯 Earnings Alert - {cap_type}",
+                "title": f"🎯 {day.title()}Earnings Alert - {cap_type}",
                 "description": f"High Volume Earnings Movers\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                 "color": int("2ecc71", 16),  # Green
                 "fields": [],
@@ -101,8 +101,8 @@ def main(request):
     for day in ["today", "yesterday"]:
         df = alert_system.download_finviz_data(day)
         categorized_stocks = alert_system.process_data(df)
-        alert_system.create_discord_alert(categorized_stocks)
-    return "Alert sent successfully"
+        alert_system.create_discord_alert(categorized_stocks, day)
+    return "Alert sent successfully", 200
 
 
 if __name__ == "__main__":

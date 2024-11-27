@@ -2,7 +2,7 @@ name: Deploy Cloud Functions
 
 on:
   push:
-    branches: [dummy-branch]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
           DB_PWD: ${{ secrets.DB_PWD }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_NAME: ${{ secrets.DB_NAME }}
-          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          FINVIZ_EMAIL: ${{ secrets.FINVIZ_EMAIL }}
           GITHUB_BEFORE: ${{ github.event.before }}
           GITHUB_SHA: ${{ github.sha }}
           PROJECT_ID: ${{ secrets.PROJECT_ID }}
