@@ -12,42 +12,36 @@ deploy_function() {
     cp -r scripts/common $function_dir/
     cp scripts/requirements.txt $function_dir/
 
-    # Deploying as a Cloud Function (Gen1)
+    # Deploying as a Cloud Function
     echo "Deploying $function_name as Cloud Function $generation..."
 
-    # Conditionally set Docker registry option if deploying to Gen1
-    docker_registry_option=""
-    if [ "$generation" = "no-gen2" ]; then
-        docker_registry_option="--docker-registry=artifact-registry"
-    fi
-
-    # Set timeout based on generation
-    timeout_value="540s"
-    if [ "$generation" = "gen2" ]; then
-        timeout_value="3600s"
-    fi
-
-    # Formulate generation option
-    generation_option=""
-    if [ "$generation" = "gen2" ]; then
-        generation_option="--gen2"
-    fi
-
-    # Execute the gcloud command and capture output
-    gcloud functions deploy "$function_name" \
+    # Base deployment command
+    deployment_command="gcloud functions deploy $function_name \
         --region=us-central1 \
-        --source="$function_dir" \
-        --runtime python311 --trigger-http --allow-unauthenticated \
-        --set-env-vars DB_HOST="${DB_HOST}",DB_PWD="${DB_PWD}",DB_USER="${DB_USER}",DB_NAME="${DB_NAME}",FINVIZ_EMAIL="${FINVIZ_EMAIL}" \
+        --source=$function_dir \
+        --runtime python311 \
+        --trigger-http \
+        --allow-unauthenticated \
+        --set-env-vars DB_HOST=${DB_HOST},DB_PWD=${DB_PWD},DB_USER=${DB_USER},DB_NAME=${DB_NAME},FINVIZ_EMAIL=${FINVIZ_EMAIL} \
         --entry-point=main \
-        --timeout="$timeout_value" \
         --memory=4GiB \
         --cpu=2 \
         --concurrency=5 \
         --min-instances=0 \
-        --max-instances=50 \
-        $generation_option \
-        $docker_registry_option || { echo "Failed to deploy $function_name"; exit 1; }
+        --max-instances=50"
+
+    # Add generation-specific options
+    if [ "$generation" = "no-gen2" ]; then
+        deployment_command+=" --no-gen2"
+        deployment_command+=" --docker-registry=artifact-registry"
+        deployment_command+=" --timeout=540s"
+    else
+        deployment_command+=" --gen2"
+        deployment_command+=" --timeout=3600s"
+    fi
+
+    # Execute the deployment command
+    eval $deployment_command || { echo "Failed to deploy $function_name"; exit 1; }
 
     # Create Cloud Scheduler jobs for each message body (if provided)
     if [[ -n "$cron_syntax" && -n "$message_bodies" ]]; then
@@ -73,7 +67,6 @@ deploy_function() {
                 --oidc-token-audience="https://us-central1-${PROJECT_ID}.cloudfunctions.net/$function_name" \
                 --quiet \
                 --attempt-deadline=30m
-
         done
     else
         echo "Skipping Cloud Scheduler job creation for $function_name (no cron syntax or message bodies provided)."
