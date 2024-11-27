@@ -2,7 +2,7 @@ name: Deploy Django to GAE
 
 on:
   push:
-    branches: [dmain]
+    branches: [main]
   pull_request:
     branches: [dmain]
   workflow_dispatch:
