@@ -28,7 +28,7 @@ class EarningsAlertSystem:
         return fetch_csv_as_dataframe(url, params)
 
     def process_data(self, df):
-        # df["Volume Ratio"] = df["Volume"] / df["Average Volume"]
+        df["Volume Ratio"] = df["Volume"] / df["Average Volume"]
         # df = df[df["Volume Ratio"] > 1.5]
 
         df["Change"] = df["Change"].str.rstrip("%").astype(float)
