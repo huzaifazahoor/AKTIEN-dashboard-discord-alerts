@@ -15,7 +15,7 @@ class AlertListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return (
-            Alert.objects.values("alert_name")
+            Alert.objects.values("alert_name", "alert_datetime")
             .annotate(stock_count=Count("stock", distinct=True))
             .order_by("alert_name")
         )

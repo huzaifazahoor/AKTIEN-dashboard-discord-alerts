@@ -12,7 +12,7 @@ class Alert(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ["stock", "alert_name"]
+        unique_together = ["stock", "alert_name", "alert_datetime"]
 
     def __str__(self):
         return f"{self.alert_name} {self.stock.ticker}"

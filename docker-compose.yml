@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:13
     environment:
-      POSTGRES_DB: <db-name>
-      POSTGRES_USER: <db-user>
-      POSTGRES_PASSWORD: <db-password>
+      POSTGRES_DB: aktien-db
+      POSTGRES_USER: huzaifa
+      POSTGRES_PASSWORD: Django.123
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
