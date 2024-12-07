@@ -2,7 +2,7 @@ name: Deploy Cloud Functions
 
 on:
   push:
-    branches: [dmain]
+    branches: [main]
   workflow_dispatch:
 
 jobs:

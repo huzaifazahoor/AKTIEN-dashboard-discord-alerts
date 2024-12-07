@@ -1,6 +1,8 @@
 import json
 import os
+import time
 from datetime import datetime
+from random import uniform
 
 import requests
 from common.utils import DBConnection, execute_bulk_insert, fetch_csv_as_dataframe
@@ -56,26 +58,26 @@ class EarningsAlertSystem:
             stock_id, alert_name, alert_datetime, data,
             created_at, updated_at
         ) VALUES %s
-        ON CONFLICT (stock_id, alert_name, alert_datetime)
+        ON CONFLICT (stock_id, alert_name)
         DO UPDATE SET
+            alert_datetime = EXCLUDED.alert_datetime,
             data = EXCLUDED.data,
             updated_at = NOW()
         """
         execute_bulk_insert(connection, cursor, query, alerts_data)
 
-    def download_finviz_data(self, day):
+    def download_finviz_data(self):
         url = "https://elite.finviz.com/export.ashx"
         params = {
             "v": "152",
-            "f": f"earningsdate_{day},fa_epsrev_eo5,sh_avgvol_o500,sh_relvol_o1.5,ta_gap_u3",
-            # "f": "earningsdate_prevdays5,fa_epsrev_eo5,sh_relvol_o1.5",
+            "f": "earningsdate_prevdays5,fa_epsrev_bp",
             "ft": "4",
-            "c": "0,1,2,3,4,5,6,63,67,65,66,129",
+            "c": "0,1,2,3,4,5,6,63,67,65,66,129,7,16,20,21,9,38,33,13,39,64",
             "auth": f"{self.FINVIZ_EMAIL}",
         }
         return fetch_csv_as_dataframe(url, params)
 
-    def process_data(self, df, day):
+    def process_data(self, df):
         df["Volume Ratio"] = df["Volume"] / df["Average Volume"]
         df["Change"] = df["Change"].str.rstrip("%").astype(float)
 
@@ -108,8 +110,20 @@ class EarningsAlertSystem:
                         "company": stock["Company"],
                         "price": stock["Price"],
                         "change": stock["Change"],
+                        "volume": stock["Volume"],
                         "volume_ratio": round(stock["Volume Ratio"], 2),
                         "market_cap": f"${stock['Market Cap']}M",
+                        "sector": stock["Sector"],
+                        "industry": stock["Industry"],
+                        "eps_growth": stock["EPS growth next 5 years"],
+                        "sales_growth": stock["Sales growth past 5 years"],
+                        "peg": stock["PEG"],
+                        "debt_equity": stock["Total Debt/Equity"],
+                        "roe": stock["Return on Equity"],
+                        "pfcf": stock["P/Free Cash Flow"],
+                        "pe": stock["P/E"],
+                        "rel_volume": stock["Relative Volume"],
+                        "eps": stock["EPS (ttm)"],
                     }
                     # Prepare stock data for Discord alert
                     stocks_info_to_upsert.append(
@@ -127,14 +141,15 @@ class EarningsAlertSystem:
                     alerts_to_upsert.append(
                         (
                             stock["Ticker"],
-                            f"{day} Earnings",
+                            "Earnings Alert",
                             "NOW()",
                             json.dumps(
                                 {
-                                    "price": float(stock["Price"]),
-                                    "volume": int(stock["Volume"]),
-                                    "market_cap": float(stock["Market Cap"]),
+                                    "price": stock["Price"],
+                                    "volume": stock["Volume"],
+                                    "market_cap": stock["Market Cap"],
                                     "cap_type": cap_type,
+                                    "eps": stock["EPS (ttm)"],
                                 }
                             ),
                             "NOW()",
@@ -154,53 +169,59 @@ class EarningsAlertSystem:
 
         return categorized_stocks
 
-    def create_discord_alert(self, categorized_stocks, day):
+    def create_discord_alert(self, categorized_stocks):
         headers = {"Content-Type": "application/json"}
 
         for cap_type, stocks in categorized_stocks.items():
             if not stocks:
                 continue
 
-            embed = {
-                "title": f"🎯 {day} Earnings Alert - {cap_type}",
-                "description": f"High Volume Earnings Movers\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                "color": int("2ecc71", 16),
-                "fields": [],
-            }
-
             for stock in stocks:
-                embed["color"] = (
-                    int("2ecc71", 16) if stock["change"] >= 0 else int("e74c3c", 16)
-                )
-                field = {
-                    "name": f"{stock['ticker']} - {stock['company']}",
-                    "value": (
-                        f"💰 Price: ${stock['price']}\n"
-                        f"📊 Change: {stock['change']:+.2f}%\n"
-                        f"📈 Volume Ratio: {stock['volume_ratio']}x\n"
-                        f"💎 Market Cap: {stock['market_cap']}"
+                price = stock["price"]
+                change = stock["change"]
+                company = stock["company"]
+
+                embed = {
+                    "title": f"🎯 Earnings Alert | {stock['ticker']} ({cap_type})",
+                    "description": (
+                        f"**{company}** → ${price} ({change}%)\n\n"
+                        "**📊 Key Metrics:**\n"
+                        f"• EPS Growth (Next 5Y): {stock['eps_growth']} 📈\n"
+                        f"• Sales Growth (Last 5Y): {stock['sales_growth']} 🚀\n"
+                        f"• PEG Ratio: {stock['peg']:.2f} ⚡\n"
+                        f"• D/E Ratio: {stock['debt_equity']:.2f} 🛡\n"
+                        f"• ROE: {stock['roe']} 💡\n"
+                        f"• P/FCF: {stock['pfcf']:.1f} 💰\n\n"
+                        "**📈 Trading Data:**\n"
+                        f"• Volume: {stock['volume']:,.0f} | RVOL: {stock['volume_ratio']:.1f}x\n"
+                        f"• Market Cap: {stock['market_cap']} | P/E: {stock['pe']:.1f}\n"
+                        f"• Sector: {stock['sector']} | Industry: {stock['industry']}\n\n"
                     ),
-                    "inline": False,
+                    "color": (
+                        int("2ecc71", 16) if stock["change"] >= 0 else int("e74c3c", 16)
+                    ),
+                    "image": {
+                        "url": f"https://elite.finviz.com/chart.ashx?t={stock['ticker']}&ty=c&ta=0&p=d"
+                    },
+                    "footer": {
+                        "text": f"Alert Generated • {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    },
                 }
-                embed["fields"].append(field)
 
-            payload = {"embeds": [embed]}
-            response = requests.post(
-                self.DISCORD_WEBHOOK, json=payload, headers=headers
-            )
-
-            if response.status_code != 204:
-                print(
-                    f"Error sending webhook: {response.status_code} - {response.text}"
+                payload = {"embeds": [embed]}
+                response = requests.post(
+                    self.DISCORD_WEBHOOK, json=payload, headers=headers
                 )
+
+                time.sleep(uniform(0.5, 1.0))
 
 
 def main(request):
     alert_system = EarningsAlertSystem()
-    for day in ["today", "yesterday"]:
-        df = alert_system.download_finviz_data(day)
-        categorized_stocks = alert_system.process_data(df, day.title())
-        alert_system.create_discord_alert(categorized_stocks, day.title())
+    df = alert_system.download_finviz_data()
+    print(df.columns)
+    categorized_stocks = alert_system.process_data(df)
+    alert_system.create_discord_alert(categorized_stocks)
     return "Alert sent successfully", 200
 
 

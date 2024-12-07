@@ -188,17 +188,14 @@ def convert_to_float(value):
 
 def fetch_csv_as_dataframe(url, params):
     try:
-        # Build full URL with params for logging
-        param_string = "&".join(f"{k}={v}" for k, v in params.items())
-        full_url = f"{url}?{param_string}"
-        print(f"Fetching data from: {full_url}")
-
         # Fetch the data from the URL
         response = requests.get(url, params=params)
         response.raise_for_status()  # Ensure we got a valid response
 
         # Load the data into a DataFrame
         df = pd.read_csv(BytesIO(response.content))
+
+        df = df.fillna(0)
 
         return df
     except requests.exceptions.RequestException:
