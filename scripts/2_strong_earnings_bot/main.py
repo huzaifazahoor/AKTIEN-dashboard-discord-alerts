@@ -4,18 +4,19 @@ import time
 from datetime import datetime
 from random import uniform
 
+import pandas as pd
 import requests
 from common.extra_utils import (
     bulk_upsert_alerts,
     bulk_upsert_stock_info,
     bulk_upsert_stocks,
 )
-from common.utils import DBConnection, fetch_csv_as_dataframe
+from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
 
 
 class StrongEarningsScanner:
     def __init__(self):
-        self.DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
+        self.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1319295673455349852/cRcFy-LCk82p9o0EcmEay1JLZJdVWqnj_2v-n12FtINsKEOF66v6Qe9Q1uQNQikfivzp"
         self.FINVIZ_EMAIL = os.getenv("FINVIZ_EMAIL")
 
     def download_finviz_data(self):
@@ -25,20 +26,32 @@ class StrongEarningsScanner:
             "v": "152",
             "f": "earningsdate_prevdays5,sh_avgvol_o500,sh_curvol_o500,sh_price_u50,sh_relvol_o1,ta_perf_1wup",
             "ft": "4",
-            "c": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,65,66,67",  # Columns to fetch
+            "c": "0,1,2,3,4,5,129,6,7,9,13,16,20,21,33,38,39,42,63,64,67,65,66",
             "auth": f"{self.FINVIZ_EMAIL}",
         }
+        build_and_print_url(url, params)
         return fetch_csv_as_dataframe(url, params)
 
     def process_data(self, df):
         """Process and filter the data based on requirements"""
-        # Additional filtering if needed
-        df = df[
-            (df["Price"] < 50)
-            & (df["Avg Volume"] > 500000)
-            & (df["Relative Volume"] > 1)
-            & (df["Current Volume"] > 500000)
+        numeric_columns = [
+            "P/E",
+            "PEG",
+            "P/Free Cash Flow",
+            "EPS (ttm)",
+            "EPS growth next 5 years",
+            "Sales growth past 5 years",
+            "Return on Equity",
+            "Total Debt/Equity",
+            "Gross Margin",
         ]
+
+        # Convert numeric columns to float first
+        for col in numeric_columns:
+            df[col] = pd.to_numeric(df[col].replace({"N/A": None}), errors="coerce")
+
+        # Convert NaN values to "N/A" across the entire DataFrame
+        df = df.fillna("N/A")
 
         # Prepare lists for bulk operations
         stocks_to_upsert = []
@@ -65,7 +78,7 @@ class StrongEarningsScanner:
                 (
                     stock["Ticker"],
                     stock["Market Cap"],
-                    stock["Avg Volume"],
+                    stock["Average Volume"],
                     stock["Price"],
                     stock["Volume"],
                     "NOW()",
@@ -76,9 +89,9 @@ class StrongEarningsScanner:
             alert_data = {
                 "price": stock["Price"],
                 "volume": stock["Volume"],
-                "avg_volume": stock["Avg Volume"],
+                "avg_volume": stock["Average Volume"],
                 "rel_volume": stock["Relative Volume"],
-                "week_performance": stock["Week Performance"],
+                "week_performance": stock["Performance (Week)"],
                 "market_cap": stock["Market Cap"],
             }
 
@@ -93,7 +106,7 @@ class StrongEarningsScanner:
                 )
             )
 
-            # Prepare data for Discord alert
+            # Prepare data for Discord alert with additional metrics
             processed_stocks.append(
                 {
                     "ticker": stock["Ticker"],
@@ -101,12 +114,21 @@ class StrongEarningsScanner:
                     "price": stock["Price"],
                     "change": stock["Change"],
                     "volume": stock["Volume"],
-                    "avg_volume": stock["Avg Volume"],
+                    "avg_volume": stock["Average Volume"],
                     "rel_volume": stock["Relative Volume"],
                     "market_cap": stock["Market Cap"],
                     "sector": stock["Sector"],
                     "industry": stock["Industry"],
-                    "week_change": stock["Week Performance"],
+                    "week_performance": stock["Performance (Week)"],
+                    "pe_ratio": stock["P/E"],
+                    "peg_ratio": stock["PEG"],
+                    "fcf_ratio": stock["P/Free Cash Flow"],
+                    "eps_ttm": stock["EPS (ttm)"],
+                    "eps_growth_5y": stock["EPS growth next 5 years"],
+                    "sales_growth_5y": stock["Sales growth past 5 years"],
+                    "roe": stock["Return on Equity"],
+                    "debt_equity": stock["Total Debt/Equity"],
+                    "gross_margin": stock["Gross Margin"],
                 }
             )
 
@@ -127,17 +149,28 @@ class StrongEarningsScanner:
             embed = {
                 "title": f"💪 Strong Post-Earnings Alert | {stock['ticker']}",
                 "description": (
-                    f"**{stock['company']}** → ${stock['price']}\n\n"
-                    "**📊 Key Metrics:**\n"
-                    f"• Week Performance: {stock['week_change']} 📈\n"
+                    f"**{stock['company']}** → ${stock['price']} ({stock['change']})\n\n"
+                    "**📊 Trading Metrics:**\n"
+                    f"• Week Performance: {stock['week_performance']} 📈\n"
                     f"• Current Volume: {stock['volume']:,.0f} 📊\n"
                     f"• Relative Volume: {stock['rel_volume']:.2f}x 🔄\n"
                     f"• Average Volume: {stock['avg_volume']:,.0f} 📈\n\n"
+                    "**📈 Valuation & Growth:**\n"
+                    f"• P/E Ratio: {stock['pe_ratio']}\n"
+                    f"• PEG Ratio: {stock['peg_ratio']}\n"
+                    f"• P/FCF: {stock['fcf_ratio']}\n"
+                    f"• EPS (TTM): ${stock['eps_ttm']}\n"
+                    f"• EPS Growth (5Y): {stock['eps_growth_5y']}\n"
+                    f"• Sales Growth (5Y): {stock['sales_growth_5y']}\n\n"
+                    "**💰 Financial Health:**\n"
+                    f"• Return on Equity: {stock['roe']}\n"
+                    f"• Debt/Equity: {stock['debt_equity']}\n"
+                    f"• Gross Margin: {stock['gross_margin']}\n\n"
                     "**🏢 Company Info:**\n"
                     f"• Sector: {stock['sector']}\n"
                     f"• Industry: {stock['industry']}\n"
                     f"• Market Cap: ${stock['market_cap']}M\n\n"
-                    "🎯 *Potential day/swing trading candidate showing strength after earnings*"
+                    "🎯 *Strong earnings performer with notable growth metrics*"
                 ),
                 "color": int("2ecc71", 16),
                 "image": {
@@ -153,7 +186,7 @@ class StrongEarningsScanner:
                 self.DISCORD_WEBHOOK, json=payload, headers=headers
             )
 
-            if response.status_code != 200:
+            if response.status_code != 204:
                 print(f"Failed to send alert for {stock['ticker']}: {response.text}")
 
             time.sleep(uniform(0.5, 1.0))

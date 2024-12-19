@@ -80,3 +80,23 @@ deploy_function() {
 if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/1_earnings_discord_bot/'; then
     deploy_function "earnings_discord_bot_function" "scripts/1_earnings_discord_bot" "no-gen2" "05 16 * * MON-FRI" '{"hello": "world"}'
 fi
+
+if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/2_strong_earnings_bot/'; then
+    deploy_function "strong_earnings_bot_function" "scripts/2_strong_earnings_bot" "no-gen2" "10 16 * * MON-FRI" '{"source":"strong_earnings"}'
+fi
+
+if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/3_momentum_gap_bot/'; then
+    deploy_function "momentum_gap_bot_function" "scripts/3_momentum_gap_bot" "no-gen2" "15 16 * * MON-FRI" '{"source":"momentum_gap"}'
+fi
+
+if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/4_short_squeeze_bot/'; then
+    deploy_function "short_squeeze_bot_function" "scripts/4_short_squeeze_bot" "no-gen2" "20 16 * * MON-FRI" '{"source":"short_squeeze"}'
+fi
+
+if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/5_technical_ma_bot/'; then
+    deploy_function "technical_ma_bot_function" "scripts/5_technical_ma_bot" "no-gen2" "25 16 * * MON-FRI" '{"source":"technical_ma"}'
+fi
+
+if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/6_steady_performance_bot/'; then
+    deploy_function "steady_performance_bot_function" "scripts/6_steady_performance_bot" "no-gen2" "30 16 * * MON-FRI" '{"source":"steady_performance"}'
+fi

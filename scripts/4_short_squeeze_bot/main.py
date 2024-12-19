@@ -4,18 +4,19 @@ import time
 from datetime import datetime
 from random import uniform
 
+import pandas as pd
 import requests
 from common.extra_utils import (
     bulk_upsert_alerts,
     bulk_upsert_stock_info,
     bulk_upsert_stocks,
 )
-from common.utils import DBConnection, fetch_csv_as_dataframe
+from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
 
 
 class ShortSqueezeScanner:
     def __init__(self):
-        self.DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
+        self.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1319330056362790913/D88IoiowyiUiMxsWHKiOpUCZ-xydMlwKWoMOf9Rv6OtSd1_wFptoapGNF6pu6rRYBVHy"
         self.FINVIZ_EMAIL = os.getenv("FINVIZ_EMAIL")
 
     def download_finviz_data(self):
@@ -23,22 +24,39 @@ class ShortSqueezeScanner:
         url = "https://elite.finviz.com/export.ashx"
         params = {
             "v": "152",
-            "f": "sh_avgvol_o500,sh_relvol_o1,sh_short_o30,ta_highlow50d_b10h",  # Short squeeze parameters
+            "f": "sh_avgvol_o500,sh_relvol_o1,sh_short_o30,ta_highlow50d_b10h",
             "ft": "4",
-            "c": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,65,66,67,68,70",  # Include short float and other relevant data
+            "c": ",".join([str(num) for num in range(1, 201)]),
             "auth": f"{self.FINVIZ_EMAIL}",
         }
+        build_and_print_url(url, params)
         return fetch_csv_as_dataframe(url, params)
 
     def process_data(self, df):
         """Process and filter the data based on short squeeze requirements"""
-        # Apply filters
-        df = df[
-            (df["Short Float"] > 30)  # Heavy short float
-            & (df["Average Volume"] > 500000)  # Good liquidity
-            & (df["Relative Volume"] > 1)  # Recent high volume interest
-            # 10% or more below 50-day high is handled in Finviz parameters
+        # Convert numeric columns to appropriate types
+        numeric_columns = [
+            "Price",
+            "Change",
+            "Short Float",
+            "50-Day High",
+            "50-Day Low",
+            "Relative Volume",
+            "Volume",
         ]
+
+        # Convert numeric columns
+        for col in numeric_columns:
+            # First convert column to string type
+            df[col] = df[col].astype(str)
+            # Then replace % and convert to numeric
+            df[col] = pd.to_numeric(
+                df[col].str.replace("%", ""),
+                errors="coerce",
+            )
+
+        # Convert NaN values to "N/A" across the entire DataFrame
+        df = df.fillna("N/A")
 
         # Prepare lists for bulk operations
         stocks_to_upsert = []
@@ -80,8 +98,8 @@ class ShortSqueezeScanner:
                 "rel_volume": stock["Relative Volume"],
                 "short_float": stock["Short Float"],
                 "market_cap": stock["Market Cap"],
-                "fifty_day_high": stock["50D High"],
-                "fifty_day_low": stock["50D Low"],
+                "fifty_day_high": stock["50-Day High"],
+                "fifty_day_low": stock["50-Day Low"],
             }
 
             alerts_to_upsert.append(
@@ -109,8 +127,8 @@ class ShortSqueezeScanner:
                     "sector": stock["Sector"],
                     "industry": stock["Industry"],
                     "avg_volume": stock["Average Volume"],
-                    "fifty_day_high": stock["50D High"],
-                    "fifty_day_low": stock["50D Low"],
+                    "fifty_day_high": stock["50-Day High"],
+                    "fifty_day_low": stock["50-Day Low"],
                 }
             )
 
@@ -166,28 +184,26 @@ class ShortSqueezeScanner:
                 self.DISCORD_WEBHOOK, json=payload, headers=headers
             )
 
-            if response.status_code != 200:
+            if response.status_code != 204:
                 print(f"Failed to send alert for {stock['ticker']}: {response.text}")
 
             time.sleep(uniform(0.5, 1.0))
 
     def run_scanner(self):
         """Main method to run the scanner"""
-        try:
-            df = self.download_finviz_data()
-            if df is None or df.empty:
-                print("No data retrieved from Finviz")
-                return
+        df = self.download_finviz_data()
+        if df is None or df.empty:
+            print("No data retrieved from Finviz")
+            return
 
-            stocks = self.process_data(df)
-            if stocks:
-                self.create_discord_alert(stocks)
-                print(f"Successfully processed {len(stocks)} stocks")
-            else:
-                print("No stocks matched the short squeeze criteria")
+        print(df.columns)
 
-        except Exception as e:
-            print(f"Error running short squeeze scanner: {str(e)}")
+        stocks = self.process_data(df)
+        if stocks:
+            self.create_discord_alert(stocks)
+            print(f"Successfully processed {len(stocks)} stocks")
+        else:
+            print("No stocks matched the short squeeze criteria")
 
 
 def main(request):

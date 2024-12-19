@@ -4,18 +4,19 @@ import time
 from datetime import datetime
 from random import uniform
 
+import pandas as pd
 import requests
 from common.extra_utils import (
     bulk_upsert_alerts,
     bulk_upsert_stock_info,
     bulk_upsert_stocks,
 )
-from common.utils import DBConnection, fetch_csv_as_dataframe
+from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
 
 
 class TechnicalMAScanner:
     def __init__(self):
-        self.DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
+        self.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1319332546936311869/_j_BYfTpA6kUHtJEEVLMCD913b2siLxo0c30CW9TOl9_QnMu7pQwx0NWaquQtWFIXdtu"
         self.FINVIZ_EMAIL = os.getenv("FINVIZ_EMAIL")
 
     def download_finviz_data(self):
@@ -29,21 +30,37 @@ class TechnicalMAScanner:
                 "ta_sma200_pa,ta_sma50_sa200"
             ),
             "ft": "4",
-            "c": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,65,66,67,68,69,70",
+            "c": ",".join([str(num) for num in range(1, 201)]),
             "auth": f"{self.FINVIZ_EMAIL}",
         }
+        build_and_print_url(url, params)
         return fetch_csv_as_dataframe(url, params)
 
     def process_data(self, df):
         """Process and filter the data based on technical MA requirements"""
-        # Apply filters (most are handled in Finviz parameters)
-        df = df[
-            (df["Market Cap"] < 2000)  # Under 2B market cap
-            & (df["Current Ratio"] > 1)  # Fundamental strength
-            & (df["Price"].between(10, 50))  # Price between 10 and 50
-            & (df["Average Volume"] > 500000)  # Good liquidity
-            & (df["Relative Volume"] > 1)  # Recent volume interest
+        # Convert numeric columns to appropriate types
+        numeric_columns = [
+            "Price",
+            "Change",
+            "Short Float",
+            "50-Day High",
+            "50-Day Low",
+            "Relative Volume",
+            "Volume",
         ]
+
+        # Convert numeric columns
+        for col in numeric_columns:
+            # First convert column to string type
+            df[col] = df[col].astype(str)
+            # Then replace % and convert to numeric
+            df[col] = pd.to_numeric(
+                df[col].str.replace("%", ""),
+                errors="coerce",
+            )
+
+        # Convert NaN values to "N/A" across the entire DataFrame
+        df = df.fillna("N/A")
 
         # Prepare lists for bulk operations
         stocks_to_upsert = []
@@ -85,11 +102,11 @@ class TechnicalMAScanner:
                 "rel_volume": stock["Relative Volume"],
                 "market_cap": stock["Market Cap"],
                 "current_ratio": stock["Current Ratio"],
-                "quarter_perf": stock["Perf Quarter"],
-                "year_perf": stock["Perf Year"],
-                "sma20": stock["SMA20"],
-                "sma50": stock["SMA50"],
-                "sma200": stock["SMA200"],
+                "quarter_perf": stock["Performance (Quarter)"],
+                "year_perf": stock["Performance (Year)"],
+                "sma20": stock["20-Day Simple Moving Average"],
+                "sma50": stock["50-Day Simple Moving Average"],
+                "sma200": stock["200-Day Simple Moving Average"],
             }
 
             alerts_to_upsert.append(
@@ -117,11 +134,11 @@ class TechnicalMAScanner:
                     "industry": stock["Industry"],
                     "avg_volume": stock["Average Volume"],
                     "current_ratio": stock["Current Ratio"],
-                    "quarter_perf": stock["Perf Quarter"],
-                    "year_perf": stock["Perf Year"],
-                    "sma20": stock["SMA20"],
-                    "sma50": stock["SMA50"],
-                    "sma200": stock["SMA200"],
+                    "quarter_perf": stock["Performance (Quarter)"],
+                    "year_perf": stock["Performance (Year)"],
+                    "sma20": stock["20-Day Simple Moving Average"],
+                    "sma50": stock["50-Day Simple Moving Average"],
+                    "sma200": stock["200-Day Simple Moving Average"],
                 }
             )
 
@@ -179,28 +196,24 @@ class TechnicalMAScanner:
                 self.DISCORD_WEBHOOK, json=payload, headers=headers
             )
 
-            if response.status_code != 200:
+            if response.status_code != 204:
                 print(f"Failed to send alert for {stock['ticker']}: {response.text}")
 
             time.sleep(uniform(0.5, 1.0))
 
     def run_scanner(self):
         """Main method to run the scanner"""
-        try:
-            df = self.download_finviz_data()
-            if df is None or df.empty:
-                print("No data retrieved from Finviz")
-                return
+        df = self.download_finviz_data()
+        if df is None or df.empty:
+            print("No data retrieved from Finviz")
+            return
 
-            stocks = self.process_data(df)
-            if stocks:
-                self.create_discord_alert(stocks)
-                print(f"Successfully processed {len(stocks)} stocks")
-            else:
-                print("No stocks matched the technical MA criteria")
-
-        except Exception as e:
-            print(f"Error running technical MA scanner: {str(e)}")
+        stocks = self.process_data(df)
+        if stocks:
+            self.create_discord_alert(stocks)
+            print(f"Successfully processed {len(stocks)} stocks")
+        else:
+            print("No stocks matched the technical MA criteria")
 
 
 def main(request):

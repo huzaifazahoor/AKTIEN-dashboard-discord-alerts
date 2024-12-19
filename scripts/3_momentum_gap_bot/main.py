@@ -4,18 +4,19 @@ import time
 from datetime import datetime
 from random import uniform
 
+import pandas as pd
 import requests
 from common.extra_utils import (
     bulk_upsert_alerts,
     bulk_upsert_stock_info,
     bulk_upsert_stocks,
 )
-from common.utils import DBConnection, fetch_csv_as_dataframe
+from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
 
 
 class MomentumGapScanner:
     def __init__(self):
-        self.DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
+        self.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1319301200780460133/2_m1P0R-V7vV__MUZWp9WfuQXgcXQKGeruKmgvte9aS0OY8wZU4X-PB85J4a8FytoZp5"
         self.FINVIZ_EMAIL = os.getenv("FINVIZ_EMAIL")
 
     def download_finviz_data(self):
@@ -23,22 +24,34 @@ class MomentumGapScanner:
         url = "https://elite.finviz.com/export.ashx"
         params = {
             "v": "152",
-            "f": "sh_price_u30,sh_relvol_o5,ta_perf_d15o,ta_rsi_ob70",  # Momentum gap up parameters
+            "f": "sh_price_u30,sh_relvol_o5,ta_perf_d15o,ta_rsi_ob70",
             "ft": "4",
-            "c": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,65,66,67,68,70",  # Include RSI and gap data
+            "c": ",".join([str(num) for num in range(1, 201)]),
             "auth": f"{self.FINVIZ_EMAIL}",
         }
+        build_and_print_url(url, params)
         return fetch_csv_as_dataframe(url, params)
 
     def process_data(self, df):
         """Process and filter the data based on momentum/gap requirements"""
-        # Apply filters
-        df = df[
-            (df["Price"] < 30)  # Low price stocks
-            & (df["Relative Volume"] > 5)  # Very high relative volume
-            & (df["Change"] > 15)  # Gap up 15% or more
-            & (df["RSI (14)"] > 70)  # RSI above 70 (overbought)
+        # Convert numeric columns to appropriate types
+        numeric_columns = [
+            "Price",
+            "Change",
         ]
+
+        # Convert numeric columns
+        for col in numeric_columns:
+            # First convert column to string type
+            df[col] = df[col].astype(str)
+            # Then replace % and convert to numeric
+            df[col] = pd.to_numeric(
+                df[col].str.replace("%", ""),
+                errors="coerce",
+            )
+
+        # Convert NaN values to "N/A" across the entire DataFrame
+        df = df.fillna("N/A")
 
         # Prepare lists for bulk operations
         stocks_to_upsert = []
@@ -65,7 +78,7 @@ class MomentumGapScanner:
                 (
                     stock["Ticker"],
                     stock["Market Cap"],
-                    stock["Avg Volume"],
+                    stock["Average Volume"],
                     stock["Price"],
                     stock["Volume"],
                     "NOW()",
@@ -78,7 +91,7 @@ class MomentumGapScanner:
                 "change": stock["Change"],
                 "volume": stock["Volume"],
                 "rel_volume": stock["Relative Volume"],
-                "rsi": stock["RSI (14)"],
+                # "rsi": stock["RSI"],
                 "gap": stock["Change"],
                 "market_cap": stock["Market Cap"],
             }
@@ -103,11 +116,11 @@ class MomentumGapScanner:
                     "change": stock["Change"],
                     "volume": stock["Volume"],
                     "rel_volume": stock["Relative Volume"],
-                    "rsi": stock["RSI (14)"],
+                    # "rsi": stock["RSI"],
                     "market_cap": stock["Market Cap"],
                     "sector": stock["Sector"],
                     "industry": stock["Industry"],
-                    "avg_volume": stock["Avg Volume"],
+                    "avg_volume": stock["Average Volume"],
                 }
             )
 
@@ -134,7 +147,7 @@ class MomentumGapScanner:
                     f"**{stock['company']}** → ${stock['price']}\n\n"
                     "**📊 Gap Metrics:**\n"
                     f"• Gap Up: +{stock['change']}% 📈\n"
-                    f"• RSI(14): {stock['rsi']:.1f} 🔥\n"
+                    # f"• RSI(14): {stock['rsi']:.1f} 🔥\n"
                     f"• Relative Volume: {stock['rel_volume']:.1f}x 📊\n"
                     f"• Current Volume: {stock['volume']:,.0f} 📈\n\n"
                     "**💡 Trading Info:**\n"
@@ -157,28 +170,24 @@ class MomentumGapScanner:
                 self.DISCORD_WEBHOOK, json=payload, headers=headers
             )
 
-            if response.status_code != 200:
+            if response.status_code != 204:
                 print(f"Failed to send alert for {stock['ticker']}: {response.text}")
 
             time.sleep(uniform(0.5, 1.0))
 
     def run_scanner(self):
         """Main method to run the scanner"""
-        try:
-            df = self.download_finviz_data()
-            if df is None or df.empty:
-                print("No data retrieved from Finviz")
-                return
+        df = self.download_finviz_data()
+        if df is None or df.empty:
+            print("No data retrieved from Finviz")
+            return
 
-            stocks = self.process_data(df)
-            if stocks:
-                self.create_discord_alert(stocks)
-                print(f"Successfully processed {len(stocks)} stocks")
-            else:
-                print("No stocks matched the momentum gap criteria")
-
-        except Exception as e:
-            print(f"Error running momentum scanner: {str(e)}")
+        stocks = self.process_data(df)
+        if stocks:
+            self.create_discord_alert(stocks)
+            print(f"Successfully processed {len(stocks)} stocks")
+        else:
+            print("No stocks matched the momentum gap criteria")
 
 
 def main(request):

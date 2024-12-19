@@ -4,18 +4,19 @@ import time
 from datetime import datetime
 from random import uniform
 
+import pandas as pd
 import requests
 from common.extra_utils import (
     bulk_upsert_alerts,
     bulk_upsert_stock_info,
     bulk_upsert_stocks,
 )
-from common.utils import DBConnection, fetch_csv_as_dataframe
+from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
 
 
 class SteadyPerformanceScanner:
     def __init__(self):
-        self.DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
+        self.DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1319334425271730176/kscJfD2QyeR5NUbKae0J4eCxO4rY5bzD2H-DNUSAiA1gHzIokmW3AVjNooJg1gyaR2Ag"
         self.FINVIZ_EMAIL = os.getenv("FINVIZ_EMAIL")
 
     def download_finviz_data(self):
@@ -31,22 +32,40 @@ class SteadyPerformanceScanner:
                 "ta_sma200_pa,ta_sma50_sb20"
             ),
             "ft": "4",
-            "c": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,65,66,67,68,69,70",
+            "c": ",".join([str(num) for num in range(1, 201)]),
             "auth": f"{self.FINVIZ_EMAIL}",
         }
+        build_and_print_url(url, params)
         return fetch_csv_as_dataframe(url, params)
 
     def process_data(self, df):
         """Process and filter the data based on steady performance requirements"""
-        # Most filters are handled in Finviz parameters
-        df = df[
-            (df["Current Ratio"] > 1)  # Strong fundamentals
-            & (df["Average Volume"] > 200000)  # Good liquidity
-            & (df["Current Volume"] > 200000)  # Active trading
-            & (df["Price"] > 1)  # No penny stocks
-            & (df["RSI (14)"] > 50)  # Not oversold
-            & (df["Sales growth past 5 years"] > 0)  # Positive sales growth
+        # Convert numeric columns to appropriate types
+        numeric_columns = [
+            "Price",
+            "Change",
+            "Short Float",
+            "50-Day High",
+            "50-Day Low",
+            "Relative Volume",
+            "Volume",
         ]
+
+        # Convert numeric columns
+        for col in numeric_columns:
+            # First convert column to string type
+            df[col] = df[col].astype(str)
+            # Then replace % and convert to numeric
+            df[col] = pd.to_numeric(
+                df[col].str.replace("%", ""),
+                errors="coerce",
+            )
+
+        # Convert NaN values to "N/A" across the entire DataFrame
+        df = df.fillna("N/A")
+
+        for c in df.columns:
+            print(c)
 
         # Prepare lists for bulk operations
         stocks_to_upsert = []
@@ -87,12 +106,12 @@ class SteadyPerformanceScanner:
                 "volume": stock["Volume"],
                 "market_cap": stock["Market Cap"],
                 "current_ratio": stock["Current Ratio"],
-                "analyst_recom": stock["Recommendation"],
+                "analyst_recom": stock["Analyst Recom"],
                 "sales_growth": stock["Sales growth past 5 years"],
-                "rsi": stock["RSI (14)"],
-                "quarter_perf": stock["Perf Quarter"],
-                "year_perf": stock["Perf Year"],
-                "distance_from_high": stock["Distance from High"],
+                "rsi": stock["Relative Strength Index (14)"],
+                "quarter_perf": stock["Performance (Quarter)"],
+                "year_perf": stock["Performance (Year)"],
+                # "distance_from_high": stock["Distance from High"],
             }
 
             alerts_to_upsert.append(
@@ -118,12 +137,12 @@ class SteadyPerformanceScanner:
                     "sector": stock["Sector"],
                     "industry": stock["Industry"],
                     "current_ratio": stock["Current Ratio"],
-                    "analyst_recom": stock["Recommendation"],
+                    "analyst_recom": stock["Analyst Recom"],
                     "sales_growth": stock["Sales growth past 5 years"],
-                    "rsi": stock["RSI (14)"],
-                    "quarter_perf": stock["Perf Quarter"],
-                    "year_perf": stock["Perf Year"],
-                    "distance_from_high": stock["Distance from High"],
+                    "rsi": stock["Relative Strength Index (14)"],
+                    "quarter_perf": stock["Performance (Quarter)"],
+                    "year_perf": stock["Performance (Year)"],
+                    # "distance_from_high": stock["Distance from High"],
                     "avg_volume": stock["Average Volume"],
                 }
             )
@@ -156,7 +175,7 @@ class SteadyPerformanceScanner:
                     f"• Year Performance: {stock['year_perf']} 🚀\n"
                     f"• Sales Growth (5Y): {stock['sales_growth']}% 📊\n"
                     f"• RSI(14): {stock['rsi']:.1f} ⚡\n"
-                    f"• Distance from 52w High: {stock['distance_from_high']}% 📏\n\n"
+                    # f"• Distance from 52w High: {stock['distance_from_high']}% 📏\n\n"
                     "**💡 Fundamental Strength:**\n"
                     f"• Current Ratio: {stock['current_ratio']:.2f} 💪\n"
                     f"• Analyst Recommendation: {stock['analyst_recom']} 📋\n"
@@ -182,28 +201,24 @@ class SteadyPerformanceScanner:
                 self.DISCORD_WEBHOOK, json=payload, headers=headers
             )
 
-            if response.status_code != 200:
+            if response.status_code != 204:
                 print(f"Failed to send alert for {stock['ticker']}: {response.text}")
 
             time.sleep(uniform(0.5, 1.0))
 
     def run_scanner(self):
         """Main method to run the scanner"""
-        try:
-            df = self.download_finviz_data()
-            if df is None or df.empty:
-                print("No data retrieved from Finviz")
-                return
+        df = self.download_finviz_data()
+        if df is None or df.empty:
+            print("No data retrieved from Finviz")
+            return
 
-            stocks = self.process_data(df)
-            if stocks:
-                self.create_discord_alert(stocks)
-                print(f"Successfully processed {len(stocks)} stocks")
-            else:
-                print("No stocks matched the steady performance criteria")
-
-        except Exception as e:
-            print(f"Error running steady performance scanner: {str(e)}")
+        stocks = self.process_data(df)
+        if stocks:
+            self.create_discord_alert(stocks)
+            print(f"Successfully processed {len(stocks)} stocks")
+        else:
+            print("No stocks matched the steady performance criteria")
 
 
 def main(request):

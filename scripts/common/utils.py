@@ -200,3 +200,22 @@ def fetch_csv_as_dataframe(url, params):
         return df
     except requests.exceptions.RequestException:
         return pd.DataFrame([])
+
+
+def build_and_print_url(url, params):
+    # Create a list of key=value pairs
+    param_strings = []
+    for key, value in params.items():
+        if key != "auth":
+            param_strings.append(f"{key}={value}")
+
+    # Join parameters with & and combine with base URL
+    query_string = "&".join(param_strings)
+    complete_url = f"{url}?{query_string}"
+
+    complete_url = complete_url.replace("export", "screener")
+
+    print("Complete URL:")
+    print(complete_url)
+
+    return complete_url
