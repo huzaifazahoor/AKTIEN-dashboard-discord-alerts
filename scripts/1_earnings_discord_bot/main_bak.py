@@ -5,11 +5,8 @@ from datetime import datetime
 from random import uniform
 
 import requests
-from common.extra_utils import (
-    bulk_upsert_alerts,
-    bulk_upsert_stock_info,
-    bulk_upsert_stocks,
-)
+from common.extra_utils import (bulk_upsert_alerts, bulk_upsert_stock_info,
+                                bulk_upsert_stocks)
 from common.utils import DBConnection, fetch_csv_as_dataframe
 
 

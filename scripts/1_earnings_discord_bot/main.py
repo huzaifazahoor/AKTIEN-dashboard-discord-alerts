@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from common.base_scanner import BaseScanner
 
@@ -77,6 +78,9 @@ class EarningsAlert(BaseScanner):
                     ),
                     "image": {
                         "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=0&p=d"
+                    },
+                    "footer": {
+                        "text": f"Earnings Alert • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                     },
                 }
                 self.send_discord_message(embed)

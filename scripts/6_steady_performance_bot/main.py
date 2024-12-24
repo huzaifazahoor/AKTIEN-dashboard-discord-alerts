@@ -51,7 +51,8 @@ class SteadyPerformanceScanner(BaseScanner):
 
     def create_discord_alert(self, stocks):
         for stock in stocks:
-            # Determine color based on yearly performance
+            # Determine color
+            # based on yearly performance
             color = int(
                 "2ecc71" if stock["Performance (Year)"] * 100 > 20 else "3498db",
                 16,
@@ -83,7 +84,7 @@ class SteadyPerformanceScanner(BaseScanner):
                     "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=1&p=d"
                 },
                 "footer": {
-                    "text": f"Steady Performance Scanner • {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    "text": f"Steady Performance Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                 },
             }
 

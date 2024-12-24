@@ -28,7 +28,8 @@ class CNBCGrowthScanner(BaseScanner):
 
         processed_stocks = []
         for _, stock in df.iterrows():
-            # Only process stocks meeting the Sales growth quarter-over-quarter criteria
+            # Only process stocks meeting the
+            # Sales growth quarter-over-quarter criteria
             if stock["Sales growth quarter over quarter"] > 15:
                 processed_stock = self.get_processed_stock(stock)
                 processed_stock["sales_qoq_growth"] = stock[
@@ -78,7 +79,7 @@ class CNBCGrowthScanner(BaseScanner):
                     "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=1&p=d"
                 },
                 "footer": {
-                    "text": f"CNBC Growth Scanner • {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    "text": f"CNBC Growth Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                 },
             }
 

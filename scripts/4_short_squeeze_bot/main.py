@@ -73,7 +73,7 @@ class ShortSqueezeScanner(BaseScanner):
                     "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=1&p=d"
                 },
                 "footer": {
-                    "text": f"Short Squeeze Scanner • {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    "text": f"Short Squeeze Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                 },
             }
 

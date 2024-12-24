@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from common.base_scanner import BaseScanner
 
@@ -80,6 +81,9 @@ class StrongEarningsScanner(BaseScanner):
                     ),
                     "image": {
                         "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=1&p=d"
+                    },
+                    "footer": {
+                        "text": f"Strong Post-Earnings Alert • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                     },
                 }
 

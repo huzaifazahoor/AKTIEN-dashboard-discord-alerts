@@ -6,12 +6,10 @@ from random import uniform
 
 import pandas as pd
 import requests
-from common.extra_utils import (
-    bulk_upsert_alerts,
-    bulk_upsert_stock_info,
-    bulk_upsert_stocks,
-)
-from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
+from common.extra_utils import (bulk_upsert_alerts, bulk_upsert_stock_info,
+                                bulk_upsert_stocks)
+from common.utils import (DBConnection, build_and_print_url,
+                          fetch_csv_as_dataframe)
 
 
 class StrongEarningsScanner:

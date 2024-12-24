@@ -5,18 +5,17 @@ from random import uniform
 
 import pandas as pd
 import requests
-from common.extra_utils import (
-    bulk_upsert_alerts,
-    bulk_upsert_stock_info,
-    bulk_upsert_stocks,
-)
-from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
+from common.extra_utils import (bulk_upsert_alerts, bulk_upsert_stock_info,
+                                bulk_upsert_stocks)
+from common.utils import (DBConnection, build_and_print_url,
+                          fetch_csv_as_dataframe)
 
 
 class BaseScanner:
     def __init__(self, discord_webhook):
         self.DISCORD_WEBHOOK = discord_webhook
         self.FINVIZ_EMAIL = os.getenv("FINVIZ_EMAIL")
+        self.DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     def download_finviz_data(self, filter_params):
         """Download data from Finviz with given filter parameters"""
@@ -31,7 +30,7 @@ class BaseScanner:
         df = fetch_csv_as_dataframe(url, params)
         build_and_print_url(url, params)
         print(f"Downloaded {len(df)} stocks from Finviz")
-        return df.head(1)
+        return df
 
     def process_columns(self, df):
         """
@@ -134,7 +133,6 @@ class BaseScanner:
         return processed_stocks
 
     def bulk_db_operations(self, stocks, stock_info, alerts):
-        return
         """Execute bulk database operations"""
         with DBConnection() as connection:
             with connection.cursor() as cursor:

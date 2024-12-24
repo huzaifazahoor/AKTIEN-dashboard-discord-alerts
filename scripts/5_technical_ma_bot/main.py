@@ -50,7 +50,8 @@ class TechnicalMAScanner(BaseScanner):
 
     def create_discord_alert(self, stocks):
         for stock in stocks:
-            # Determine color based on quarterly performance
+            # Determine color
+            # based on quarterly performance
             color = int(
                 "2ecc71" if stock["Performance (Quarter)"] * 100 > 15 else "3498db",
                 16,
@@ -82,7 +83,7 @@ class TechnicalMAScanner(BaseScanner):
                     "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=1&p=d"
                 },
                 "footer": {
-                    "text": f"Technical Scanner • {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                    "text": f"Technical Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                 },
             }
 

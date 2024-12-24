@@ -100,3 +100,8 @@ fi
 if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/6_steady_performance_bot/'; then
     deploy_function "steady_performance_bot_function" "scripts/6_steady_performance_bot" "no-gen2" "30 16 * * MON-FRI" '{"source":"steady_performance"}'
 fi
+
+if git diff --name-only $GITHUB_BEFORE $GITHUB_SHA | grep -q 'scripts/7_CNBC_growth_scanner_bot/'; then
+    deploy_function "CNBC_growth_scanner_bot_function" "scripts/7_CNBC_growth_scanner_bot" "no-gen2" "35 16 * * MON-FRI" '{"source":"cnbc"}'
+fi
+
