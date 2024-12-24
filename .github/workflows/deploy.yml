@@ -3,11 +3,9 @@ name: Deploy Django to GAE
 on:
   push:
     branches: [main]
-    paths:
-      - '**'
     paths-ignore:
       - 'scripts/**'
-      - '.github/**'        
+      - '.github/**'
   workflow_dispatch:
 
 jobs:
