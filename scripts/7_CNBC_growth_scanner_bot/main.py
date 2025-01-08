@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class CNBCGrowthScanner(BaseScanner):
     def __init__(self):
         super().__init__(
-            "https://discord.com/api/webhooks/1320815995035844719/ZLS1Y5Jk8i6koHn0LCQNdDX0-HZ3HCCO2-Nos7HWu8u9IWd8glpTM_NybK_McAK5GnvZ"
+            "1326543415206215764/C-2LturhAi2tMe6A9XtI0K__6l9hcO0DZpfASevvUzW0kYWvLvB-AqEhEDm8nGZ73XNo"
         )
 
     def get_filter_params(self):

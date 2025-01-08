@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class StrongEarningsScanner(BaseScanner):
     def __init__(self):
         super().__init__(
-            "https://discord.com/api/webhooks/1319295673455349852/cRcFy-LCk82p9o0EcmEay1JLZJdVWqnj_2v-n12FtINsKEOF66v6Qe9Q1uQNQikfivzp"
+            "1326541453555662939/DWXgkpT_70fBT5lOYtBVpizzchRvVN2iY7nJDcfyTvZ-JypjU1FFTH9pHWBZG6vh_a1n"
         )
         self.MARKET_CAP_RANGES = {
             "Small Cap": (0, 2000),

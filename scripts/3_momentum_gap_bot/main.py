@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class MomentumGapScanner(BaseScanner):
     def __init__(self):
         super().__init__(
-            "https://discord.com/api/webhooks/1319301200780460133/2_m1P0R-V7vV__MUZWp9WfuQXgcXQKGeruKmgvte9aS0OY8wZU4X-PB85J4a8FytoZp5"
+            "1326541823015125083/gxhiputXu61PQ4iEvAhkIeMjGbtLd3FW17VarbK6BUgKkNkME0SINQM3UvjU47QGuMUQ"
         )
 
     def get_filter_params(self):

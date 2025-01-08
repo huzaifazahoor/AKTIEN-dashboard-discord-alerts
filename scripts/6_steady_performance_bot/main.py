@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class SteadyPerformanceScanner(BaseScanner):
     def __init__(self):
         super().__init__(
-            "https://discord.com/api/webhooks/1319334425271730176/kscJfD2QyeR5NUbKae0J4eCxO4rY5bzD2H-DNUSAiA1gHzIokmW3AVjNooJg1gyaR2Ag"
+            "1326543155255840810/tMCyUfXq4rABkumgm9bJyBGYn5M6vo_UdGYDsFja8csaOeOTh4xF5mHPquI2115R-4Ui"
         )
 
     def get_filter_params(self):

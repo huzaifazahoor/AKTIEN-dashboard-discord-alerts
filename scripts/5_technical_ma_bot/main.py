@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class TechnicalMAScanner(BaseScanner):
     def __init__(self):
         super().__init__(
-            "https://discord.com/api/webhooks/1319332546936311869/_j_BYfTpA6kUHtJEEVLMCD913b2siLxo0c30CW9TOl9_QnMu7pQwx0NWaquQtWFIXdtu"
+            "1326542555566968832/9DE3ya_4uq5-ioREY69XAYJROLvMToPvCOwObAn1zZVZr_asctl5_4uVjASSowbbM8iF"
         )
 
     def get_filter_params(self):

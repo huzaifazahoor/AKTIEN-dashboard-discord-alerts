@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class ShortSqueezeScanner(BaseScanner):
     def __init__(self):
         super().__init__(
-            "https://discord.com/api/webhooks/1319330056362790913/D88IoiowyiUiMxsWHKiOpUCZ-xydMlwKWoMOf9Rv6OtSd1_wFptoapGNF6pu6rRYBVHy"
+            "1326542336720764938/EM4yx4jakMGqkkTmUAEJ0spC9P0_o2hh3amUKnA4weTJYOLSZjGkDzDEzRe_e9i1hTKe"
         )
 
     def get_filter_params(self):

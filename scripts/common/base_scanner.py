@@ -13,7 +13,9 @@ from common.utils import (DBConnection, build_and_print_url,
 
 class BaseScanner:
     def __init__(self, discord_webhook):
-        self.DISCORD_WEBHOOK = discord_webhook
+        self.BASE_URL = "https://discord.com/api/webhooks/"
+        self.NEXT_URL = discord_webhook
+        self.DISCORD_WEBHOOK = self.BASE_URL + self.NEXT_URL
         self.FINVIZ_EMAIL = os.getenv("FINVIZ_EMAIL")
         self.DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
