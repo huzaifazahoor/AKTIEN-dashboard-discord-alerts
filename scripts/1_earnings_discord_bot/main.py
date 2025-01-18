@@ -80,7 +80,7 @@ class EarningsAlert(BaseScanner):
                         "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=0&p=d"
                     },
                     "footer": {
-                        "text": f"Earnings Alert • {datetime.now().strftime(self.DATETIME_FORMAT)}"
+                        "text": f"BulleXpert Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                     },
                 }
                 self.send_discord_message(embed)

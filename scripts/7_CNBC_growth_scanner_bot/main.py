@@ -57,7 +57,7 @@ class CNBCGrowthScanner(BaseScanner):
     def create_discord_alert(self, stocks):
         for stock in stocks:
             embed = {
-                "title": f"🎯 CNBC Growth Scanner Alert | {stock['Ticker']}",
+                "title": f"🎯 Growth Scanner Alert | {stock['Ticker']}",
                 "description": (
                     f"**{stock['Company']}** → ${stock['Price']:.2f}\n\n"
                     "**📊 Growth Metrics:**\n"
@@ -79,7 +79,7 @@ class CNBCGrowthScanner(BaseScanner):
                     "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=1&p=d"
                 },
                 "footer": {
-                    "text": f"CNBC Growth Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
+                    "text": f"BulleXpert Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                 },
             }
 

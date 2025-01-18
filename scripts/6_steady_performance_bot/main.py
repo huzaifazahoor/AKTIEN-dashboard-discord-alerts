@@ -85,7 +85,7 @@ class SteadyPerformanceScanner(BaseScanner):
                     "url": f"https://elite.finviz.com/chart.ashx?t={stock['Ticker']}&ty=c&ta=1&p=d"
                 },
                 "footer": {
-                    "text": f"Steady Performance Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
+                    "text": f"BulleXpert Scanner • {datetime.now().strftime(self.DATETIME_FORMAT)}"
                 },
             }
 
