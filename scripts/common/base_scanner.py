@@ -113,6 +113,7 @@ class BaseScanner:
             "Float %",
             "EPS Surprise",
             "Revenue Surprise",
+            "50-Day High",
         ]
 
         float_cols = [
@@ -181,7 +182,7 @@ class BaseScanner:
                         )
                         / 100
                     )
-                except:
+                except Exception:
                     df[col] = pd.Series([0] * len(df), dtype="float64")
 
         # Process float columns
@@ -202,7 +203,7 @@ class BaseScanner:
                             )
                         )
                     df[col] = pd.to_numeric(df[col], errors="coerce").astype("float64")
-                except:
+                except Exception:
                     df[col] = pd.Series([0] * len(df), dtype="float64")
 
         # Process integer columns
@@ -212,7 +213,7 @@ class BaseScanner:
                     df[col] = pd.to_numeric(
                         df[col].str.replace(",", ""), errors="coerce"
                     ).astype("Int64")
-                except:
+                except Exception:
                     df[col] = pd.Series([0] * len(df), dtype="Int64")
 
         # Fill string columns

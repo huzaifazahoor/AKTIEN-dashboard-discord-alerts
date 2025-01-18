@@ -48,9 +48,12 @@ class ShortSqueezeScanner(BaseScanner):
             color = int("ff0000" if stock["Short Float"] * 100 >= 40 else "ffa500", 16)
 
             # Calculate distance from 50-day high dynamically
-            high_distance = (
-                (stock["Price"] - stock["50-Day High"]) / stock["50-Day High"] * 100
-            )
+            if stock["50-Day High"] != 0:
+                high_distance = (
+                    (stock["Price"] - stock["50-Day High"]) / stock["50-Day High"] * 100
+                )
+            else:
+                continue
 
             embed = {
                 "title": f"🎯 Short Squeeze Alert | {stock['Ticker']}",
