@@ -50,7 +50,7 @@ class CNBCGrowthScanner(BaseScanner):
                 "sales_qoq_growth": stock["sales_qoq_growth"],
                 "sales_growth": stock["Sales growth past 5 years"],
                 "eps_growth": stock["EPS growth this year"],
-                "net_margin": stock["Net Profit Margin"],
+                "net_margin": stock["Profit Margin"],
             }
         )
 
@@ -66,7 +66,7 @@ class CNBCGrowthScanner(BaseScanner):
                     f"• 5Y Revenue Growth: {stock['Sales growth past 5 years'] * 100:.2f}% 📊\n\n"
                     "**💪 Financial Strength:**\n"
                     f"• Current Ratio: {stock['Current Ratio']:.2f} 💪\n"
-                    f"• Net Profit Margin: {stock['Net Profit Margin'] * 100:.2f}% 📈\n\n"
+                    f"• Net Profit Margin: {stock['Profit Margin'] * 100:.2f}% 📈\n\n"
                     "**📈 Trading Info:**\n"
                     f"• Volume: {stock['Volume']:,.0f}\n"
                     f"• Avg Volume: {stock['Average Volume']:,.0f}\n"

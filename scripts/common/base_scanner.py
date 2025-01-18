@@ -5,10 +5,12 @@ from random import uniform
 
 import pandas as pd
 import requests
-from common.extra_utils import (bulk_upsert_alerts, bulk_upsert_stock_info,
-                                bulk_upsert_stocks)
-from common.utils import (DBConnection, build_and_print_url,
-                          fetch_csv_as_dataframe)
+from common.extra_utils import (
+    bulk_upsert_alerts,
+    bulk_upsert_stock_info,
+    bulk_upsert_stocks,
+)
+from common.utils import DBConnection, build_and_print_url, fetch_csv_as_dataframe
 
 
 class BaseScanner:
@@ -34,46 +36,191 @@ class BaseScanner:
         print(f"Downloaded {len(df)} stocks from Finviz")
         return df
 
-    def process_columns(self, df):
-        """
-        Process DataFrame columns with the following transformations:
-        - Convert percentage strings to floats (as decimals).
-        - Remove commas from large numbers and convert to numeric.
-        - Handle financial metrics like Market Cap and Sales.
-        - Preserve non-numeric and categorical columns.
-        """
+    def process_columns_bak(self, df):
         for col in df.columns:
-            if df[col].dtype == object:  # Only process object-type columns
-                # Check for percentage values and convert to decimals
+            if df[col].dtype == object:
+                # Handle percentages
                 if df[col].str.contains("%", na=False).any():
                     df[col] = (
-                        df[col]
-                        .str.replace("%", "", regex=True)
-                        .str.replace(",", "", regex=True)
-                        .astype(float)
-                        / 100  # Convert percentages to decimals
+                        df[col].str.replace("%", "").str.replace(",", "").astype(float)
+                        / 100
                     )
-                # Check for large numbers with commas
-                elif df[col].str.replace(",", "", regex=True).str.isnumeric().any():
-                    df[col] = pd.to_numeric(
-                        df[col].str.replace(",", "", regex=True), errors="coerce"
-                    )
-                # Handle Market Cap (e.g., "B" for billions, "M" for millions)
-                elif df[col].str.contains(r"[BM]$", na=False).any():
-                    df[col] = (
-                        df[col]
-                        .str.replace("B", "e9", regex=True)
-                        .str.replace("M", "e6", regex=True)
-                        .str.replace(",", "", regex=True)
-                        .astype(float)
-                    )
-            elif pd.api.types.is_numeric_dtype(df[col]):
-                # Ensure numeric columns are clean
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-            # Non-numeric columns remain unchanged
 
-        # Fill missing values with a default
+                # Handle Market Cap
+                elif df[col].str.contains(r"[BM]$", na=False).any():
+                    try:
+                        df[col] = df[col].apply(
+                            lambda x: (
+                                float(
+                                    x.replace("B", "e9")
+                                    .replace("M", "e6")
+                                    .replace(",", "")
+                                )
+                                if isinstance(x, str) and x[-1] in ["B", "M"]
+                                else x
+                            )
+                        )
+                    except Exception:
+                        df[col] = "N/A"
+
+                # Handle numeric strings
+                elif df[col].str.replace(",", "").str.isnumeric().any():
+                    df[col] = pd.to_numeric(
+                        df[col].str.replace(",", ""), errors="coerce"
+                    )
+
         return df.fillna("N/A")
+
+    def process_columns(self, df):
+        """Process DataFrame columns with appropriate type conversions"""
+
+        percentage_cols = [
+            "Dividend Yield",
+            "Payout Ratio",
+            "EPS growth this year",
+            "EPS growth next year",
+            "EPS growth past 5 years",
+            "EPS growth next 5 years",
+            "Sales growth past 5 years",
+            "EPS growth quarter over quarter",
+            "Sales growth quarter over quarter",
+            "Insider Ownership",
+            "Insider Transactions",
+            "Institutional Ownership",
+            "Institutional Transactions",
+            "Short Float",
+            "Return on Assets",
+            "Return on Equity",
+            "Return on Investment",
+            "Gross Margin",
+            "Operating Margin",
+            "Profit Margin",
+            "Performance (Week)",
+            "Performance (Month)",
+            "Performance (Quarter)",
+            "Performance (Half Year)",
+            "Performance (Year)",
+            "Performance (YTD)",
+            "Volatility (Week)",
+            "Volatility (Month)",
+            "20-Day Simple Moving Average",
+            "50-Day Simple Moving Average",
+            "200-Day Simple Moving Average",
+            "Change from Open",
+            "Gap",
+            "Change",
+            "After-Hours Change",
+            "Float %",
+            "EPS Surprise",
+            "Revenue Surprise",
+        ]
+
+        float_cols = [
+            "Market Cap",
+            "P/E",
+            "Forward P/E",
+            "PEG",
+            "P/S",
+            "P/B",
+            "P/Cash",
+            "P/Free Cash Flow",
+            "EPS (ttm)",
+            "Shares Outstanding",
+            "Shares Float",
+            "Short Ratio",
+            "Current Ratio",
+            "Quick Ratio",
+            "LT Debt/Equity",
+            "Total Debt/Equity",
+            "Beta",
+            "Average True Range",
+            "Relative Strength Index (14)",
+            "Analyst Recom",
+            "Average Volume",
+            "Relative Volume",
+            "Price",
+            "Target Price",
+            "Book/sh",
+            "Cash/sh",
+            "Dividend",
+            "Employees",
+            "EPS next Q",
+            "Income",
+            "Prev Close",
+            "Sales",
+            "Short Interest",
+            "Open",
+            "High",
+            "Low",
+        ]
+
+        int_cols = ["Volume", "Trades"]
+
+        string_cols = [
+            "Ticker",
+            "Company",
+            "Sector",
+            "Industry",
+            "Country",
+            "Earnings Date",
+            "IPO Date",
+            "Index",
+            "Optionable",
+            "Shortable",
+            "Exchange",
+        ]
+
+        # Process percentage columns
+        for col in percentage_cols:
+            if col in df.columns:
+                try:
+                    df[col] = (
+                        pd.to_numeric(
+                            df[col].str.replace("%", "").str.replace(",", ""),
+                            errors="coerce",
+                        )
+                        / 100
+                    )
+                except:
+                    df[col] = pd.Series([0] * len(df), dtype="float64")
+
+        # Process float columns
+        for col in float_cols:
+            if col in df.columns:
+                try:
+                    if df[col].dtype == object:
+                        df[col] = df[col].apply(
+                            lambda x: (
+                                float(
+                                    str(x)
+                                    .replace("B", "e9")
+                                    .replace("M", "e6")
+                                    .replace(",", "")
+                                )
+                                if pd.notna(x) and isinstance(x, str)
+                                else x
+                            )
+                        )
+                    df[col] = pd.to_numeric(df[col], errors="coerce").astype("float64")
+                except:
+                    df[col] = pd.Series([0] * len(df), dtype="float64")
+
+        # Process integer columns
+        for col in int_cols:
+            if col in df.columns:
+                try:
+                    df[col] = pd.to_numeric(
+                        df[col].str.replace(",", ""), errors="coerce"
+                    ).astype("Int64")
+                except:
+                    df[col] = pd.Series([0] * len(df), dtype="Int64")
+
+        # Fill string columns
+        for col in string_cols:
+            if col in df.columns:
+                df[col] = df[col].fillna("N/A").astype("string")
+
+        return df
 
     def prepare_base_data(self, stock):
         """Prepare common stock data for database operations"""

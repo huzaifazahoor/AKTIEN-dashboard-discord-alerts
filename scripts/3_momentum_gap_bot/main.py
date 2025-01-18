@@ -73,6 +73,7 @@ class MomentumGapScanner(BaseScanner):
 def main(request):
     scanner = MomentumGapScanner()
     scanner.run_scanner()
+    # done
     return "Momentum scanner completed successfully", 200
 
 

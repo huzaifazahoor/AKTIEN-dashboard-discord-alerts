@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class EarningsAlert(BaseScanner):
     def __init__(self):
         super().__init__(
-            "https://discord.com/api/webhooks/1122843142140465192/Xc9tEeA2iGOx0McuvUeDiQkbcCP8tVpMuuN3oiYhrv43QxB6cVgoJv_BMW4mxipqXVEJ"
+            "1330092263833075744/R09Ht3GrjAi-YLnakYmYL_-XB9p9SsPksuBrF6pnGDaFMSaFiZ8XAOve_l1HpOPmxKrL"
         )
         self.MARKET_CAP_RANGES = {
             "Small Cap": (0, 2000),

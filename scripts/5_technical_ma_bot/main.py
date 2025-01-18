@@ -66,10 +66,6 @@ class TechnicalMAScanner(BaseScanner):
                     f"• Year Performance: {stock['Performance (Year)'] * 100:.2f}% 🚀\n"
                     f"• Current Ratio: {stock['Current Ratio']:.2f} 💪\n"
                     f"• Relative Volume: {stock['Relative Volume']:.2f}x 📊\n\n"
-                    "**🎯 Moving Averages:**\n"
-                    f"• Price > SMA20 ✅\n"
-                    f"• Price > SMA200 ✅\n"
-                    f"• SMA50 > SMA200 ✅\n\n"
                     "**💡 Trading Info:**\n"
                     f"• Market Cap: ${stock['Market Cap'] / 1e6:.2f}M\n"
                     f"• Volume: {stock['Volume']:,.0f}\n"
@@ -93,6 +89,7 @@ class TechnicalMAScanner(BaseScanner):
 def main(request):
     scanner = TechnicalMAScanner()
     scanner.run_scanner()
+    # done
     return "Technical MA scanner completed successfully", 200
 
 

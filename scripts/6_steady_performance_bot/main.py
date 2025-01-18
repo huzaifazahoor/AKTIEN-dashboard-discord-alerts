@@ -52,7 +52,8 @@ class SteadyPerformanceScanner(BaseScanner):
     def create_discord_alert(self, stocks):
         for stock in stocks:
             # Determine color
-            # based on yearly performance
+            # based on yearly
+            # performance
             color = int(
                 "2ecc71" if stock["Performance (Year)"] * 100 > 20 else "3498db",
                 16,

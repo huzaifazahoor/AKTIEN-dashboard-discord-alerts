@@ -9,6 +9,7 @@ class ShortSqueezeScanner(BaseScanner):
         super().__init__(
             "1326542336720764938/EM4yx4jakMGqkkTmUAEJ0spC9P0_o2hh3amUKnA4weTJYOLSZjGkDzDEzRe_e9i1hTKe"
         )
+        # done
 
     def get_filter_params(self):
         return "sh_avgvol_o500,sh_relvol_o1,sh_short_o30,ta_highlow50d_b10h"

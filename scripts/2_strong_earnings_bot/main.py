@@ -7,7 +7,7 @@ from common.base_scanner import BaseScanner
 class StrongEarningsScanner(BaseScanner):
     def __init__(self):
         super().__init__(
-            "1326541453555662939/DWXgkpT_70fBT5lOYtBVpizzchRvVN2iY7nJDcfyTvZ-JypjU1FFTH9pHWBZG6vh_a1n"
+            "1330090697310736405/R4q5uJoRPg-SupNZB3bSZgq94RXttYsiunDUn7tKxDQy7F9rDxz-Jg-rXz9c1kjnrKV1"
         )
         self.MARKET_CAP_RANGES = {
             "Small Cap": (0, 2000),
@@ -59,10 +59,22 @@ class StrongEarningsScanner(BaseScanner):
                 continue
 
             for stock in stocks:
+                # Convert values to float if they're strings
+                price = (
+                    float(stock["Price"])
+                    if isinstance(stock["Price"], str)
+                    else stock["Price"]
+                )
+                change = (
+                    float(stock["Change"])
+                    if isinstance(stock["Change"], str)
+                    else stock["Change"]
+                )
+
                 embed = {
                     "title": f"💪 Strong Post-Earnings Alert | {stock['Ticker']} ({cap_type})",
                     "description": (
-                        f"**{stock['Company']}** → ${stock['Price']:.2f} ({stock['Change'] * 100:.2f}%)\n\n"
+                        f"**{stock['Company']}** → ${price:.2f} ({change * 100:.2f}%)\n\n"
                         "**📊 Key Metrics:**\n"
                         f"• EPS Growth (5Y): {stock['EPS growth next 5 years'] * 100:.2f}% 📈\n"
                         f"• Sales Growth (5Y): {stock['Sales growth past 5 years'] * 100:.2f}% 🚀\n"
@@ -93,6 +105,7 @@ class StrongEarningsScanner(BaseScanner):
 def main(request):
     scanner = StrongEarningsScanner()
     scanner.run_scanner()
+    # done
     return "Scanner completed successfully", 200
 
 
